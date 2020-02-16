@@ -51,6 +51,11 @@ RSpec.describe "Classifieds", type: :request do
     end
   end
 
+  describe 'POST /v1/classfieds/:id/publications' do 
+    before { post "/v1/classifieds/#{classified.id}/publications"}
+    it {expect(response).to have_http_status :created}
+  end
+
   describe 'POST /v1/classifieds' do
     context "when unauthenticated" do
       it 'returns unauthorized' do

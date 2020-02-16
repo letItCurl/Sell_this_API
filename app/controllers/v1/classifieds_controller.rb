@@ -30,6 +30,10 @@ class V1::ClassifiedsController < ApplicationController
         render json: @classified.errors.details, status: :bad_request
     end
 
+    def publish
+        render json: {message: "HIRE ME PLZ <3"}, status: :created
+    end
+
     private
 
     def classified_params
