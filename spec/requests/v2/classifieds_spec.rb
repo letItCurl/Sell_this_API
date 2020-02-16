@@ -8,7 +8,8 @@ RSpec.describe "Classifieds", type: :request do
     let(:per_page) {5}
     context 'everything is going well' do
       before {
-        FactoryGirl.create_list :classified, 18
+        FactoryGirl.create_list :classified, 5, category: 'vehicules'
+        FactoryGirl.create_list :classified, 15, category: 'accessories'
       }
       it 'work' do
         get "/v2/classifieds", params: {page: page, per_page: per_page, order: 'asc' }
@@ -22,6 +23,18 @@ RSpec.describe "Classifieds", type: :request do
         get "/v2/classifieds", params: {page: page, per_page: per_page, order: 'desc' }
         expect(parsed_body.map {|c| c['id']}).to eq Classified.order(created_at: :desc).limit(per_page).offset((page-1)*per_page).pluck(:id)
       end
+      it 'returns categorized results when category param is given' do
+        get '/v2/classifieds', params: { page:1, per_page: 5, order: 'asc', category: 'accessories'}
+        parsed_body.each{|classifed| expect(classifed['category']).to eq 'accessories'}
+      end
+      it 'returns the correct result when searching' do
+        classified_1 = FactoryGirl.create :classified, title: 'Big chains'
+        classified_2 = FactoryGirl.create :classified, title: 'new car'
+        classified_3 = FactoryGirl.create :classified, title: 'gold plate'
+        get '/v2/classifieds', params: {page: 1, per_page: 5, order: 'asc', q: 'car'}
+        expect(parsed_body.map {|classified| classified['id']}).to eq [classified_2.id]
+      end
+
     end
     it 'returns a bad request when page params is missing' do
       get '/v2/classifieds/', params: {per_page: per_page, order: 'asc'}
@@ -57,6 +70,7 @@ RSpec.describe "Classifieds", type: :request do
           title: classified.title,
           price: classified.price,
           description: classified.description,
+          category: classified.category,
           user:{
             id: classified.user.id,
             fullname: classified.user.fullname

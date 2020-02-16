@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_02_16_145419) do
+ActiveRecord::Schema.define(version: 2020_02_16_160658) do
 
   create_table "classifieds", force: :cascade do |t|
     t.string "title"
@@ -19,6 +19,7 @@ ActiveRecord::Schema.define(version: 2020_02_16_145419) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "user_id"
+    t.string "category"
     t.index ["user_id"], name: "index_classifieds_on_user_id"
   end
 
