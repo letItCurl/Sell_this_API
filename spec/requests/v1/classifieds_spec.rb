@@ -3,13 +3,13 @@ require 'pp'
 
 RSpec.describe "Classifieds", type: :request do
   let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
-  describe 'GET /calssifieds' do
+  describe 'GET /v1/calssifieds' do
     context 'everything is going well' do
       let(:page) {3}
       let(:per_page) {5}
       before {
         FactoryGirl.create_list :classified, 18
-        get "/classifieds", params: {page: page, per_page: per_page}
+        get "/v1/classifieds", params: {page: page, per_page: per_page}
       }
       it 'work' do
         expect(response).to have_http_status(206)
@@ -19,16 +19,16 @@ RSpec.describe "Classifieds", type: :request do
       end
     end
     it 'returns a bad request when params are missing' do
-      get '/classifieds/'
+      get '/v1/classifieds/'
       expect(response).to have_http_status :bad_request
       expect(parsed_body.keys).to include 'error'
       expect(parsed_body['error']).to eq 'missing parameters'
     end
   end
 
-  describe 'GET /classifieds/:id' do
+  describe 'GET /v1/classifieds/:id' do
     context 'when everything goes well' do
-      before {get "/classifieds/#{classified.id}"}
+      before {get "/v1/classifieds/#{classified.id}"}
       it 'works' do
         expect(response).to have_http_status(200)
       end
@@ -46,15 +46,15 @@ RSpec.describe "Classifieds", type: :request do
       end
     end
     it 'returns not found when the resource can not be found' do
-      get "/classifieds/lala" 
+      get "/v1/classifieds/lala" 
       expect(response).to have_http_status :not_found
     end
   end
 
-  describe 'POST /classifieds' do
+  describe 'POST /v1/classifieds' do
     context "when unauthenticated" do
       it 'returns unauthorized' do
-        post '/classifieds'
+        post '/v1/classifieds'
         expect(response).to have_http_status :unauthorized
       end
     end
@@ -63,18 +63,18 @@ RSpec.describe "Classifieds", type: :request do
         { classified: {title: 'title', price: '62', description: 'description'}}
       }
       it 'works' do
-        post '/classifieds', params: params, headers: authentication_header
+        post '/v1/classifieds', params: params, headers: authentication_header
         expect(response).to have_http_status :created
       end
       it 'creates a new classified' do
         expect{
-          post '/classifieds', params: params, headers: authentication_header
+          post '/v1/classifieds', params: params, headers: authentication_header
         }.to change {
           current_user.classifieds.count
         }.by 1
       end
       it 'has correct fields values for the created classified' do
-        post '/classifieds', params: params, headers: authentication_header
+        post '/v1/classifieds', params: params, headers: authentication_header
         created_classified = current_user.classifieds.last
         expect(created_classified.title).to eq 'title'
         expect(created_classified.price).to eq 62
@@ -82,34 +82,34 @@ RSpec.describe "Classifieds", type: :request do
       end
       it 'returns a bad request when a parameter is missing' do
         params[:classified].delete(:price)
-        post '/classifieds', params: params, headers: authentication_header
+        post '/v1/classifieds', params: params, headers: authentication_header
         expect(response).to have_http_status :bad_request
       end
 
       it 'returns a bad request when price not a number' do
         params[:classified][:price] = "blabla"
-        post '/classifieds', params: params, headers: authentication_header
+        post '/v1/classifieds', params: params, headers: authentication_header
         #puts parsed_body
         expect(response).to have_http_status :bad_request
       end
     end
   end
 
-  describe 'PATCH /classifieds/:id' do
+  describe 'PATCH /v1/classifieds/:id' do
     
     let(:params) {
       { classified: {title: 'title', price: '62'}}
     }
     context 'when unauthenticated' do
       it 'returns unauthorized' do
-        patch "/classifieds/#{classified.id}"
+        patch "/v1/classifieds/#{classified.id}"
         expect(response).to have_http_status :unauthorized
       end
     end
 
     context 'when authenticated' do
       context 'when everything goes well' do
-        before {patch "/classifieds/#{classified.id}", params: params, headers: authentication_header}
+        before {patch "/v1/classifieds/#{classified.id}", params: params, headers: authentication_header}
         it { expect(response).to have_http_status(200) }
         it 'modifies the given fields of the resource' do
           modified_classified = Classified.find(classified.id)
@@ -120,45 +120,45 @@ RSpec.describe "Classifieds", type: :request do
 
       it 'returns a bad request when a parameter is malformed' do
         params[:classified][:price] = 'looops'
-        patch "/classifieds/#{classified.id}", params: params, headers: authentication_header
+        patch "/v1/classifieds/#{classified.id}", params: params, headers: authentication_header
         expect(response).to have_http_status :bad_request
       end
       it 'returns a not found resource can not be found' do
-        patch '/classifieds/tinpuzar', params: params, headers: authentication_header
+        patch '/v1/classifieds/tinpuzar', params: params, headers: authentication_header
         expect(response).to have_http_status :not_found
       end
       it 'returns a forbidden when the requester is not the owner of the ressource' do
         another_classified = FactoryGirl.create :classified
-        patch "/classifieds/#{another_classified.id}", params: params, headers: authentication_header
+        patch "/v1/classifieds/#{another_classified.id}", params: params, headers: authentication_header
         expect(response).to have_http_status :forbidden
       end
     end
 
   end
 
-  describe 'DELETE /classifieds/:id' do
+  describe 'DELETE /v1/classifieds/:id' do
     context 'when unauthenticated' do
       it 'return unautorized' do
-        delete "/classifieds/#{classified.id}"
+        delete "/v1/classifieds/#{classified.id}"
         expect(response).to have_http_status :unauthorized
       end
     end
     context 'when authenticated' do 
       context 'when everything goes well' do
-        before {delete "/classifieds/#{classified.id}", headers: authentication_header}
+        before {delete "/v1/classifieds/#{classified.id}", headers: authentication_header}
         it { expect(response).to have_http_status :no_content}
         it 'deletes the given classifed' do
           expect(Classified.find_by(id: classified.id)).to eq nil
         end
         it 'returns a forbidden when the requester is not the owner of the ressource' do
           another_classified = FactoryGirl.create :classified
-          delete "/classifieds/#{another_classified.id}", headers: authentication_header
+          delete "/v1/classifieds/#{another_classified.id}", headers: authentication_header
           expect(response).to have_http_status :forbidden
         end
 
       end
       it 'returns a not found resource can not be found' do
-        delete '/classifieds/tinpuzar', headers: authentication_header
+        delete '/v1/classifieds/tinpuzar', headers: authentication_header
         expect(response).to have_http_status :not_found
       end
     end
