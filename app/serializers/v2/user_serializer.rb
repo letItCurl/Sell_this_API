@@ -1,2 +1,3 @@
-class V2::UserSerializer < V1::UserSerializer
+class V2::UserSerializer < ActiveModel::Serializer
+    attributes :id, :firstname, :lastname, :username
 end

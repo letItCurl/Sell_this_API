@@ -4,25 +4,44 @@ require 'pp'
 RSpec.describe "Classifieds", type: :request do
   let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
   describe 'GET /v2/calssifieds' do
+    let(:page) {3}
+    let(:per_page) {5}
     context 'everything is going well' do
-      let(:page) {3}
-      let(:per_page) {5}
       before {
         FactoryGirl.create_list :classified, 18
-        get "/v2/classifieds", params: {page: page, per_page: per_page}
       }
       it 'work' do
+        get "/v2/classifieds", params: {page: page, per_page: per_page, order: 'asc' }
         expect(response).to have_http_status(206)
       end
-      it 'return paginated result' do
-        expect(parsed_body.map {|c| c['id']}).to eq Classified.all.limit(per_page).offset((page-1)*per_page).pluck(:id)
+      it 'return paginated result when order is asc' do
+        get "/v2/classifieds", params: {page: page, per_page: per_page, order: 'asc' }
+        expect(parsed_body.map {|c| c['id']}).to eq Classified.order(created_at: :asc).limit(per_page).offset((page-1)*per_page).pluck(:id)
+      end
+      it 'return paginated result when order is desc' do
+        get "/v2/classifieds", params: {page: page, per_page: per_page, order: 'desc' }
+        expect(parsed_body.map {|c| c['id']}).to eq Classified.order(created_at: :desc).limit(per_page).offset((page-1)*per_page).pluck(:id)
       end
     end
-    it 'returns a bad request when params are missing' do
-      get '/v2/classifieds/'
+    it 'returns a bad request when page params is missing' do
+      get '/v2/classifieds/', params: {per_page: per_page, order: 'asc'}
       expect(response).to have_http_status :bad_request
-      expect(parsed_body.keys).to include 'error'
-      expect(parsed_body['error']).to eq 'missing parameters'
+      expect(parsed_body['error']).to eq 'missing parameter page'
+    end
+    it 'returns a bad request when per_page params is missing' do
+      get '/v2/classifieds/', params: {page: page, order: 'asc'}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body['error']).to eq 'missing parameter per_page'
+    end
+    it 'returns a bad request when order params is missing' do
+      get '/v2/classifieds/', params: {page: page, per_page: per_page}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body['error']).to eq 'missing parameter order'
+    end
+    it 'returns a bad request when order params is wtf' do
+      get '/v2/classifieds/', params: {page: page, per_page: per_page, order: "wtf"}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body['error']).to eq 'order must be asc or desc'
     end
   end
 
@@ -110,27 +129,7 @@ RSpec.describe "Classifieds", type: :request do
     context 'when authenticated' do
       context 'when everything goes well' do
         before {patch "/v2/classifieds/#{classified.id}", params: params, headers: authentication_header}
-        it { expect(response).to have_http_status(200) }
-        it 'modifies the given fields of the resource' do
-          modified_classified = Classified.find(classified.id)
-          expect(modified_classified.title).to eq 'title'
-          expect(modified_classified.price).to eq 62
-        end
-      end
-
-      it 'returns a bad request when a parameter is malformed' do
-        params[:classified][:price] = 'looops'
-        patch "/v2/classifieds/#{classified.id}", params: params, headers: authentication_header
-        expect(response).to have_http_status :bad_request
-      end
-      it 'returns a not found resource can not be found' do
-        patch '/v2/classifieds/tinpuzar', params: params, headers: authentication_header
-        expect(response).to have_http_status :not_found
-      end
-      it 'returns a forbidden when the requester is not the owner of the ressource' do
-        another_classified = FactoryGirl.create :classified
-        patch "/v2/classifieds/#{another_classified.id}", params: params, headers: authentication_header
-        expect(response).to have_http_status :forbidden
+        it { expect(response).to have_http_status :forbidden }
       end
     end
 
