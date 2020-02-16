@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'pp'
 
 RSpec.describe "Classifieds", type: :request do
   let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
@@ -22,10 +23,16 @@ RSpec.describe "Classifieds", type: :request do
         expect(response).to have_http_status(200)
       end
       it 'is correctly serialized' do 
-        expect(parsed_body['id']).to eq classified.id
-        expect(parsed_body['title']).to eq classified.title
-        expect(parsed_body['price']).to eq classified.price
-        expect(parsed_body['description']).to eq classified.description
+        expect(parsed_body).to match({
+          id: classified.id,
+          title: classified.title,
+          price: classified.price,
+          description: classified.description,
+          user:{
+            id: classified.user.id,
+            fullname: classified.user.fullname
+          }.stringify_keys
+        }.stringify_keys)
       end
     end
     it 'returns not found when the resource can not be found' do
