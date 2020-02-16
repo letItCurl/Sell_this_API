@@ -4,15 +4,25 @@ require 'pp'
 RSpec.describe "Classifieds", type: :request do
   let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
   describe 'GET /calssifieds' do
-    before {
-      FactoryGirl.create_list :classified, 3
-      get "/classifieds"
-    }
-    it 'work' do
-      expect(response).to have_http_status(200)
+    context 'everything is going well' do
+      let(:page) {3}
+      let(:per_page) {5}
+      before {
+        FactoryGirl.create_list :classified, 18
+        get "/classifieds", params: {page: page, per_page: per_page}
+      }
+      it 'work' do
+        expect(response).to have_http_status(206)
+      end
+      it 'return paginated result' do
+        expect(parsed_body.map {|c| c['id']}).to eq Classified.all.limit(per_page).offset((page-1)*per_page).pluck(:id)
+      end
     end
-    it 'return all the entries' do
-      expect(parsed_body.count).to eq Classified.all.count
+    it 'returns a bad request when params are missing' do
+      get '/classifieds/'
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body.keys).to include 'error'
+      expect(parsed_body['error']).to eq 'missing parameters'
     end
   end
 
