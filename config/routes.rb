@@ -5,6 +5,6 @@ Rails.application.routes.draw do
   get 'ping', to: 'table_tennis#ping'
 
 
-  resources :classifieds, only: [:show, :index]
+  resources :classifieds, only: [:show, :index, :create, :update, :destroy]
 
 end
