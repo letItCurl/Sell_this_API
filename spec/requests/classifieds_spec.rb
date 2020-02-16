@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Classifieds", type: :request do
-
+  let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
   describe 'GET /calssifieds' do
     before {
       FactoryGirl.create_list :classified, 3
@@ -16,7 +16,6 @@ RSpec.describe "Classifieds", type: :request do
   end
 
   describe 'GET /classifieds/:id' do
-    let(:classified) {FactoryGirl.create :classified}
     before {get "/classifieds/#{classified.id}"}
     it 'works' do
       expect(response).to have_http_status(200)
@@ -74,7 +73,7 @@ RSpec.describe "Classifieds", type: :request do
   end
 
   describe 'PATCH /classifieds/:id' do
-    let(:classified) {FactoryGirl.create :classified, user_id: current_user.id}
+    
     let(:params) {
       { classified: {title: 'title', price: '62'}}
     }
@@ -113,4 +112,34 @@ RSpec.describe "Classifieds", type: :request do
     end
 
   end
+
+  describe 'DELETE /classifieds/:id' do
+    context 'when unauthenticated' do
+      it 'return unautorized' do
+        delete "/classifieds/#{classified.id}"
+        expect(response).to have_http_status :unauthorized
+      end
+    end
+    context 'when authenticated' do 
+      context 'when everything goes well' do
+        before {delete "/classifieds/#{classified.id}", headers: authentication_header}
+        it { expect(response).to have_http_status :no_content}
+        it 'deletes the given classifed' do
+          expect(Classified.find_by(id: classified.id)).to eq nil
+        end
+        it 'returns a forbidden when the requester is not the owner of the ressource' do
+          another_classified = FactoryGirl.create :classified
+          delete "/classifieds/#{another_classified.id}", headers: authentication_header
+          expect(response).to have_http_status :forbidden
+        end
+
+      end
+      it 'returns a not found resource can not be found' do
+        delete '/classifieds/tinpuzar', headers: authentication_header
+        expect(response).to have_http_status :not_found
+      end
+    end
+
+  end
+
 end
